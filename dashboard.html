@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Welcome</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .welcome-header {
+            margin-bottom: 30px;
+        }
+
+        .welcome-header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .welcome-header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .user-info {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .user-details {
+            color: #333;
+        }
+
+        .user-details h3 {
+            margin-bottom: 5px;
+        }
+
+        .user-details p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .auth-method {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .actions {
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .token-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="welcome-header">
+            <h1>🎉 Welcome to Your Dashboard!</h1>
+            <p>You have successfully authenticated</p>
+        </div>
+
+        <div class="user-info">
+            <div class="user-avatar" id="userAvatar">
+                👤
+            </div>
+            <div class="user-details">
+                <h3 id="userName">Loading...</h3>
+                <p id="userEmail">Loading...</p>
+                <span class="auth-method" id="authMethod">Loading...</span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="refreshToken()">Refresh Session</button>
+            <button class="btn btn-secondary" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="token-info" id="tokenInfo">
+            <strong>Session Info:</strong> <span id="tokenStatus">Checking...</span>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+        });
+
+        function checkAuthStatus() {
+            const token = localStorage.getItem('authToken');
+            const user = localStorage.getItem('user');
+
+            if (!token) {
+                // No token found, redirect to login
+                alert('No authentication token found. Redirecting to login...');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const userData = JSON.parse(user);
+                displayUserInfo(userData, token);
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+                displayDefaultUserInfo(token);
+            }
+        }
+
+        function displayUserInfo(userData, token) {
+            const userNameEl = document.getElementById('userName');
+            const userEmailEl = document.getElementById('userEmail');
+            const authMethodEl = document.getElementById('authMethod');
+            const userAvatarEl = document.getElementById('userAvatar');
+
+            // Display user information
+            userNameEl.textContent = userData.name || 'User';
+            userEmailEl.textContent = userData.email || 'No email provided';
+            
+            // Determine auth method
+            if (userData.picture) {
+                authMethodEl.textContent = 'Google OAuth';
+                authMethodEl.style.background = '#e8f5e8';
+                authMethodEl.style.color = '#2e7d32';
+                
+                // Show Google profile picture if available
+                userAvatarEl.innerHTML = `<img src="${userData.picture}" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            } else {
+                authMethodEl.textContent = 'Email/Password';
+                authMethodEl.style.background = '#e3f2fd';
+                authMethodEl.style.color = '#1976d2';
+                
+                // Show first letter of name/email
+                const initial = (userData.name || userData.email || 'U').charAt(0).toUpperCase();
+                userAvatarEl.textContent = initial;
+            }
+
+            // Display token info
+            displayTokenInfo(token);
+        }
+
+        function displayDefaultUserInfo(token) {
+            const userNameEl = document.getElementById('userName');
+            const userEmailEl = document.getElementById('userEmail');
+            const authMethodEl = document.getElementById('authMethod');
+
+            userNameEl.textContent = 'User';
+            userEmailEl.textContent = 'Authenticated User';
+            authMethodEl.textContent = 'Unknown Method';
+
+            displayTokenInfo(token);
+        }
+
+        function displayTokenInfo(token) {
+            const tokenStatusEl = document.getElementById('tokenStatus');
+            
+            try {
+                // Decode JWT token (basic decode, not verification)
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const expiryDate = new Date(payload.exp * 1000);
+                const now = new Date();
+                
+                if (expiryDate > now) {
+                    const timeLeft = Math.round((expiryDate - now) / (1000 * 60)); // minutes
+                    tokenStatusEl.textContent = `Token valid for ${timeLeft} more minutes`;
+                } else {
+                    tokenStatusEl.textContent = 'Token expired';
+                    tokenStatusEl.parentElement.style.background = '#f8d7da';
+                    tokenStatusEl.parentElement.style.color = '#721c24';
+                }
+            } catch (error) {
+                tokenStatusEl.textContent = 'Token format invalid';
+            }
+        }
+
+        function refreshToken() {
+            // In a real app, you would call a refresh endpoint
+            alert('Token refresh functionality would be implemented here');
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            alert('Logged out successfully');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth Test</title>
+    <script src="https://accounts.google.com/gsi/client" onload="initGoogle()" onerror="googleError()"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+        button:hover { background: #0056b3; }
+        .debug { background: #ff6b6b; }
+        .debug:hover { background: #ff5252; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Google OAuth Test Page</h1>
+    <p>This page will help us diagnose the Google OAuth issue.</p>
+    
+    <div id="status" class="status info">Loading Google API...</div>
+    
+    <div id="buttons" style="display: none;">
+        <h3>Test Buttons:</h3>
+        <button onclick="testPrompt()">Test Google Prompt</button>
+        <button onclick="testRenderButton()">Test Render Button</button>
+        <button class="debug" onclick="showDebugInfo()">Show Debug Info</button>
+    </div>
+    
+    <!-- Google Sign-In Button Container -->
+    <div id="g_id_onload"
+         data-client_id="645663424179-7u1f48lc5tadir43bi04ev81dr4h9vog.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+    <div id="g_id_signin"></div>
+    
+    <div id="result"></div>
+
+    <script>
+        let googleLoaded = false;
+
+        function initGoogle() {
+            console.log('Google script loaded');
+            document.getElementById('status').innerHTML = '✅ Google script loaded successfully';
+            document.getElementById('status').className = 'status success';
+            
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                googleLoaded = true;
+                
+                // Initialize Google Sign-In
+                google.accounts.id.initialize({
+                    client_id: "645663424179-7u1f48lc5tadir43bi04ev81dr4h9vog.apps.googleusercontent.com",
+                    callback: handleCredentialResponse
+                });
+                
+                // Render the official button
+                google.accounts.id.renderButton(
+                    document.getElementById("g_id_signin"),
+                    { 
+                        theme: "outline", 
+                        size: "large",
+                        type: "standard",
+                        text: "signin_with",
+                        shape: "rectangular"
+                    }
+                );
+                
+                document.getElementById('buttons').style.display = 'block';
+                document.getElementById('status').innerHTML += '<br>✅ Google Sign-In initialized';
+            } else {
+                document.getElementById('status').innerHTML = '❌ Google API not properly loaded';
+                document.getElementById('status').className = 'status error';
+            }
+        }
+
+        function googleError() {
+            console.error('Failed to load Google script');
+            document.getElementById('status').innerHTML = '❌ Failed to load Google script';
+            document.getElementById('status').className = 'status error';
+        }
+
+        function handleCredentialResponse(response) {
+            console.log("Encoded JWT ID token: " + response.credential);
+            document.getElementById('result').innerHTML = `
+                <div class="status success">
+                    <h3>✅ Google Sign-In Successful!</h3>
+                    <p>Token received: ${response.credential.substring(0, 50)}...</p>
+                    <p>Now sending to backend...</p>
+                </div>
+            `;
+            
+            // Send to backend
+            fetch('http://localhost:3000/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: response.credential })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerHTML += `
+                    <div class="status success">
+                        <h3>✅ Backend Response:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                document.getElementById('result').innerHTML += `
+                    <div class="status error">
+                        <h3>❌ Backend Error:</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function testPrompt() {
+            if (!googleLoaded) {
+                alert('Google not loaded yet');
+                return;
+            }
+            
+            try {
+                google.accounts.id.prompt((notification) => {
+                    console.log('Prompt notification:', notification);
+                    if (notification.isNotDisplayed()) {
+                        console.log('Prompt not displayed:', notification.getNotDisplayedReason());
+                    }
+                });
+            } catch (error) {
+                console.error('Error with prompt:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function testRenderButton() {
+            if (!googleLoaded) {
+                alert('Google not loaded yet');
+                return;
+            }
+            
+            const newButtonDiv = document.createElement('div');
+            newButtonDiv.id = 'test-button-' + Date.now();
+            document.body.appendChild(newButtonDiv);
+            
+            try {
+                google.accounts.id.renderButton(newButtonDiv, {
+                    theme: 'filled_blue',
+                    size: 'large'
+                });
+            } catch (error) {
+                console.error('Error rendering button:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function showDebugInfo() {
+            let info = [];
+            info.push('=== Debug Information ===');
+            info.push('Google loaded: ' + googleLoaded);
+            info.push('typeof google: ' + typeof google);
+            
+            if (typeof google !== 'undefined') {
+                info.push('google.accounts: ' + !!google.accounts);
+                if (google.accounts) {
+                    info.push('google.accounts.id: ' + !!google.accounts.id);
+                }
+            }
+            
+            info.push('User Agent: ' + navigator.userAgent);
+            info.push('Current URL: ' + window.location.href);
+            
+            console.log(info.join('\n'));
+            alert(info.join('\n'));
+        }
+
+        // Fallback initialization
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                if (!googleLoaded && typeof google !== 'undefined') {
+                    console.log('Fallback initialization');
+                    initGoogle();
+                }
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

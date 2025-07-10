@@ -1,0 +1,26 @@
+# Node.js Backend Dependencies
+# Install with: npm install
+
+# Core Express.js framework
+express@^5.1.0
+
+# Cross-Origin Resource Sharing middleware
+cors@^2.8.5
+
+# Body parsing middleware
+body-parser@^2.2.0
+
+# Password hashing library
+bcryptjs@^3.0.2
+
+# JSON Web Token implementation
+jsonwebtoken@^9.0.2
+
+# Google OAuth authentication library
+google-auth-library@^9.0.0
+
+# Environment variables loader
+dotenv@^17.2.0
+
+# Development Dependencies (optional)
+# nodemon@^3.0.0  # Auto-restart server during development
